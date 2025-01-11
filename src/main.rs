@@ -12,9 +12,8 @@ use rayon::prelude::*;
 use std::sync::Mutex;
 use std::ffi::OsStr;
 use std::hash::{Hash, Hasher, SipHasher};
-use chrono::{DateTime, Utc, TimeZone};
+use chrono::{DateTime, Utc};
 use std::fs::{ DirEntry};
-use std::time::SystemTime;
 use chrono::Datelike; 
 #[derive(Parser)]
 #[command(name = "dhs", about = "Disk Cleanup utiliity")]
@@ -73,7 +72,7 @@ struct Entry {
     is_dir: bool,
 }
 fn list_sizes(path:&str){
-    let paths = fs::read_dir(path.clone()).unwrap();
+    let paths = fs::read_dir(path).unwrap();
     let mut entries: Vec<Entry> = Vec::new();
     for path in paths {
         if let Ok(entry) = path {
@@ -107,7 +106,7 @@ fn list_sizes(path:&str){
             println!("{}: {}", entry.path, ByteSize(entry.size));
         }
     }
-    if let Ok(folder_size) = get_size(path.clone()) {
+    if let Ok(folder_size) = get_size(path) {
         println!("{}: {}", ByteSize(folder_size), path);
     } else {
         println!("{}: {}", ByteSize(total_size), path);
