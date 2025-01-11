@@ -46,6 +46,14 @@ enum Commands {
         #[arg(required = true, help = "Path for dedupe directory")]
         path: String
     },
+    #[command(name = "delf")]
+    DeleteFolder {
+        #[arg(required = true, help = "Path for dedupe directory")]
+        path: String,
+
+        #[arg(required = true, help = "Folder to be deleted")]
+        folder: String
+    },
 }
 
 fn main() {
@@ -63,6 +71,9 @@ fn main() {
         }
         Commands::Dedupe { path } =>{
             delete_duplicates_and_keep_one(Path::new(path.as_str()));
+        }
+        Commands::DeleteFolder { path,folder } =>{
+            delete_specific_folder(Path::new(path.as_str()), folder.as_str());
         }
     }
 }
@@ -310,4 +321,23 @@ fn hash_filename(file_name: &OsStr) -> String {
     let mut hasher = SipHasher::new();
     file_name.hash(&mut hasher);
     format!("{:x}", hasher.finish())
+}
+fn delete_specific_folder(dir: &Path,folder:&str) {
+    // Iterate through all files and directories recursively
+    for entry in WalkDir::new(dir) {
+        match entry {
+            Ok(entry) => {
+                // Check if the current entry is a `node_modules` directory
+                if entry.file_name() == folder && entry.path().is_dir() {
+                    println!("Deleting: {}", entry.path().display());
+
+                    // Try to delete the `node_modules` directory
+                    if let Err(e) = fs::remove_dir_all(entry.path()) {
+                        eprintln!("Failed to delete {}: {}", entry.path().display(), e);
+                    }
+                }
+            }
+            Err(e) => eprintln!("Error reading entry: {}", e),
+        }
+    }
 }
