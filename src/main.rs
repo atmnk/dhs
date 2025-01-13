@@ -14,6 +14,8 @@ use std::ffi::OsStr;
 use std::hash::{Hash, Hasher, SipHasher};
 use chrono::{DateTime, Utc};
 use std::fs::{ DirEntry};
+use glob::glob;
+
 use chrono::Datelike; 
 #[derive(Parser)]
 #[command(name = "dhs", about = "Disk Cleanup utiliity")]
@@ -48,11 +50,19 @@ enum Commands {
     },
     #[command(name = "delf")]
     DeleteFolder {
-        #[arg(required = true, help = "Path for dedupe directory")]
+        #[arg(required = true, help = "Path for target directory")]
         path: String,
 
         #[arg(required = true, help = "Folder to be deleted")]
         folder: String
+    },
+    #[command(name = "delp")]
+    DeletePattern {
+        #[arg(required = true, help = "Path for target directory")]
+        path: String,
+
+        #[arg(required = true, help = "pattern for files to be deleted")]
+        pattern: String
     },
 }
 
@@ -74,6 +84,9 @@ fn main() {
         }
         Commands::DeleteFolder { path,folder } =>{
             delete_specific_folder(Path::new(path.as_str()), folder.as_str());
+        }
+        Commands::DeletePattern { path,pattern } =>{
+            delete_files_with_pattern(path.as_str(), pattern.as_str());
         }
     }
 }
@@ -340,4 +353,19 @@ fn delete_specific_folder(dir: &Path,folder:&str) {
             Err(e) => eprintln!("Error reading entry: {}", e),
         }
     }
+}
+fn delete_files_with_pattern(dir: &str, pattern: &str) -> std::io::Result<()> {
+    let search_pattern = format!("{}/**/{}", dir, pattern);
+    for entry in glob(&search_pattern).expect("Failed to read glob pattern") {
+        match entry {
+            Ok(path) => {
+                if path.is_file() {
+                    println!("Deleting file: {:?}", path);
+                    fs::remove_file(&path)?;
+                }
+            }
+            Err(e) => eprintln!("Error processing path: {}", e),
+        }
+    }
+    Ok(())
 }
